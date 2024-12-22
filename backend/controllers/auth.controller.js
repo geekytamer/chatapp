@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import generateTokenAndSetCookie from '../utils/generateToken.js';
 export const signup = async (req, res) => {
     try {
-        const { fullName, username, password, confirmedPassword, gender } = req.body;
+        const { fullName, username, password, confirmPassword, gender } = req.body;
 
-        if (password !== confirmedPassword) {
+        if (password !== confirmPassword) {
             return res.status(400).json({ error: "Passwords do not match" });
         }
         
@@ -26,7 +26,6 @@ export const signup = async (req, res) => {
             fullname: fullName,
             password: hashedPassword,
             profilePic: gender === "male"? boyProfilePic : girlProfilePic,
-            gender,
         });
 
         
@@ -38,7 +37,7 @@ export const signup = async (req, res) => {
             _id: newUser._id,
             username: newUser.username,
             profilePic: newUser.profilePic,
-            fullName: newUser.fullName,
+            fullName: newUser.fullname,
             });
         } else {
             res.status(400).json({ error: "Failed to create user" });
@@ -53,6 +52,7 @@ export const signup = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { username, password } = req.body;
+        console.log("login request", username, password);
         const user = await User.findOne({ username });
 
         const isMatch = await bcrypt.compare(password, user.password || "");
@@ -66,7 +66,7 @@ export const loginUser = async (req, res) => {
             _id: user._id,
             username: user.username,
             profilePic: user.profilePic,
-            fullName: user.fullName,
+            fullName: user.fullname,
         });
     } catch (error) {
         console.error("error in login route: ", error);
