@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import Conversation from "../models/conversation.model.js";
+import { auto } from "openai/_shims/registry.mjs";
 
 export const getConversationsForSideBar = async (req, res) => {
   try {
@@ -26,6 +27,8 @@ export const getConversationsForSideBar = async (req, res) => {
         fullname: otherParticipant?.fullname || "Unknown", // Fallback in case of missing participant data
         profilePic: otherParticipant?.profilePic || "", // Fallback in case of missing profilePic
         isOnline: false, // You can calculate online status based on your socket connection logic
+        autoResponseEnabled:
+          conversation.autoResponseEnabled || false, // Include auto-response status
         lastMessage:
           conversation.messages.length > 0
             ? conversation.messages[conversation.messages.length - 1].message

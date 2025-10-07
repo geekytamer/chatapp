@@ -2,10 +2,10 @@ async function sendWhatsappMessage(data) {
   const headers = {
     "Content-type": "application/json",
     Authorization:
-      "Bearer EAAGALlgZCIMsBO3SrQN0NEZCBmKbXdrdgr50gvg4xzIZCMNmOZAkZCG32rICJAOkdtU0yN88lheddkoY1wA47Frgy82HijOP16aFnt3ka6gysbaSJCi9tqBO14T8MQnd3kM66BFCLKwwwE7jZAZCSsg8X2H84SOnxbuTSbuzA9dxocyGIvLr2DspugOukNUeVKr0ZBZC52aabZAjkmC6PZB",
+      "Bearer EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD",
   };
 
-  const url = "https://graph.facebook.com/v20.0/394225673770982/messages";
+  const url = "https://graph.facebook.com/v20.0/120295417829073/messages";
 
   try {
     const response = await fetch(url, {

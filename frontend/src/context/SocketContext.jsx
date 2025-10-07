@@ -14,7 +14,7 @@ export const SocketContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (authUser) {
-      const socket = io("https://v10fwg0x-5000.inc1.devtunnels.ms/", {
+      const socket = io("https://mll116rk-5001.asse.devtunnels.ms/", {
         query: { userId: authUser._id },
       });
 

@@ -62,7 +62,7 @@ const CreateTemplatePage = () => {
           fileSize,
           fileType,
           accessToken:
-            "EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv", // Send token securely from backend in production
+            "EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD", // Send token securely from backend in production
         }),
       });
 
@@ -79,29 +79,48 @@ const CreateTemplatePage = () => {
       formData.append("uploadSessionId", uploadSessionId);
       formData.append(
         "accessToken",
-        "EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv"
+        "EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD"
       ); // Add token
 
       try {
-        const uploadResponse = await fetch(
-          "/api/media/upload-file",
-          {
-            method: "POST",
-            body: formData, // Send as multipart/form-data
-          }
-        );
+        // Create an AbortController for managing timeouts
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort(); // Abort the request if it takes too long
+        }, 15 * 60 * 10000); // 10 minutes timeout (adjust as needed)
 
+        const uploadResponse = await fetch("/api/media/upload-file", {
+          method: "POST",
+          body: formData, // Send as multipart/form-data
+          signal: controller.signal, // Attach the signal to the fetch call
+        });
+
+        clearTimeout(timeoutId); // Clear the timeout once the request completes
+
+        // Check if the response is OK
+        if (!uploadResponse.ok) {
+          console.log(uploadResponse)
+          throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        }
+
+        // Parse the JSON response
         const uploadFileData = await uploadResponse.json();
 
+        // Validate the response structure
         if (!uploadFileData.h) {
-          throw new Error("File upload failed.");
+          throw new Error("File upload failed: Missing 'h' in response.");
         }
 
         uploadedFileHandle = uploadFileData.h;
         console.log("File uploaded:", uploadedFileHandle);
       } catch (error) {
-        console.error("Error uploading file:", error);
-        alert("Media upload failed. Please try again.");
+        if (error.name === "AbortError") {
+          console.error("File upload timed out.");
+          alert("Media upload timed out. Please try again.");
+        } else {
+          console.error("Error uploading file:", error);
+          alert("Media upload failed. Please try again.");
+        }
       }
 
       
@@ -130,6 +149,8 @@ const CreateTemplatePage = () => {
         }),
       };
     }
+
+    console.log("header component",headerComponent)
 
     // Prepare the body component
     const bodyComponent = {
@@ -171,11 +192,11 @@ const CreateTemplatePage = () => {
 
     try {
       const response = await axios.post(
-        `https://graph.facebook.com/v20.0/429009386955154/message_templates`,
+        `https://graph.facebook.com/v20.0/120508451140772/message_templates`,
         templateData,
         {
           headers: {
-            Authorization: `Bearer EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv`,
+            Authorization: `Bearer EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD`,
             "Content-Type": "application/json",
           },
         }
@@ -268,7 +289,8 @@ const CreateTemplatePage = () => {
               <option value="">-- Select Header Type --</option>
               <option value="text">Text</option>
               <option value="image">Image</option>
-              <option value="pdf">PDF</option>
+              <option value="document">document</option>
+              <option value="video">video</option>
             </select>
           </div>
 
@@ -401,13 +423,10 @@ const CreateTemplatePage = () => {
             Add Button
           </button>
         </div>
-          <br></br>
+        <br></br>
         {/* Submit Button */}
         <div className="card bg-base-300 rounded-box grid h-auto place-items-center p-4 mx-2 mb-24">
-          <button
-            type="submit"
-            className="btn btn-primary top-4"
-          >
+          <button type="submit" className="btn btn-primary top-4">
             Create
           </button>
         </div>

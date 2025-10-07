@@ -7,7 +7,11 @@ import Campaign from "../models/campaign.model.js";
 import CampaignMessage from "../models/campaignMessage.model.js";
 import { Readable } from "stream";
 import protectRoute from "../middleware/protectRoute.js";
-import { startSession, uploadFile, uploadFileBuffer } from "../controllers/media.controller.js";
+import {
+  startSession,
+  uploadFile,
+  uploadFileBuffer,
+} from "../controllers/media.controller.js";
 const messageQueue = new Queue("message-queue"); // Create a Redis-backed queue
 const templateRouter = express.Router();
 import mongoose from "mongoose";
@@ -15,6 +19,7 @@ import path from "path";
 import { outputDir } from "../server.js";
 import fs from "fs";
 import pLimit from "p-limit";
+import iconv from "iconv-lite"
 
 // Configure multer to handle file uploads
 const upload = multer({ storage: multer.memoryStorage() });
@@ -25,21 +30,22 @@ templateRouter.post(
   upload.single("file"),
   async (req, res) => {
     const template = JSON.parse(req.body.template);
+    console.log(template)
     const file = req.file;
 
     if (!file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    console.log(`Template: ${JSON.stringify(template)}`);
-
     const headerComponent = template.components.find(
       (c) => c.type === "HEADER"
     );
     let mediaId = null;
+    let tempFileName = null;
+    console.log("Header component:", headerComponent);
     if (
       headerComponent &&
-      headerComponent.format === "IMAGE" &&
+      headerComponent.format !== "TEXT" &&
       headerComponent.example.header_handle
     ) {
       const { filePath, fileName, fileSize, fileType } =
@@ -47,7 +53,9 @@ templateRouter.post(
           headerComponent.example.header_handle[0],
           outputDir
         );
-      mediaId = `https://v10fwg0x-5000.inc1.devtunnels.ms/fetch-file/${fileName}`;
+      console.log(filePath, tempFileName, fileSize, fileType);
+      tempFileName = fileName;
+      mediaId = `https://mll116rk-5001.asse.devtunnels.ms/fetch-file/${tempFileName}`;
     }
 
     try {
@@ -69,19 +77,37 @@ templateRouter.post(
       const processPromises = [];
 
       // Use a stream to process the CSV file in chunks
-      const stream = Readable.from(file.buffer);
+      const buffer = file.buffer; // Assuming 'file' is the uploaded file
+
+      // Convert the buffer to a UTF-8 string
+      const decodedData = iconv.decode(buffer, "utf-8"); // Use 'windows-1256' or another encoding if necessary
+
+      const stream = Readable.from(decodedData);
       stream
-        .pipe(csvParser())
+        .pipe(csvParser({ encoding: "utf8", delimiter: "," }))
         .on("data", (row) => {
-          const phoneNumber = Object.values(row)[0].trim();
+          console.log("Raw data:", row);
+          const phoneNumber = "+" + row["phone"]; // First column is the phone number
+          // Extract remaining columns dynamically as variables
+          console.log("keys:", Object.keys(row));
+          const variables = Object.keys(row)
+            .filter((key) => key !== "phone") // Exclude phone numbers column
+            .map((key) => row[key].trim()); // Trim values to remove extra spaces
+          console.log(variables, phoneNumber);
+
           if (phoneNumber) {
-            phoneNumbers.push("+" + phoneNumber);
+            phoneNumbers.push(phoneNumber);
 
             // Push the promise for processing each phone number
-            // Modify how promises are added
             processPromises.push(() =>
               processPhoneNumber(
-                constructTemplateJson(template, "+" + phoneNumber, mediaId)
+                constructTemplateJson(
+                  template,
+                  phoneNumber,
+                  mediaId,
+                  variables,
+                  tempFileName
+                )
               )
             );
           }
@@ -136,7 +162,6 @@ templateRouter.post(
   }
 );
 
-
 async function processPhoneNumber(templateJson) {
   try {
     // Simulate sending message (replace with real service)
@@ -165,7 +190,7 @@ async function processPhoneNumber(templateJson) {
     return null; // Return null in case of an error to avoid breaking the flow
   }
 }
- 
+
 // Process the queue
 messageQueue.process(async (job, done) => {
   const { campaignId, phoneNumber, templateData } = job.data;
@@ -194,78 +219,83 @@ messageQueue.process(async (job, done) => {
   }
 });
 
-function constructTemplateJson(data, phoneNumber, mediaId) {
-  // Destructuring the key components from the input JSON
+function constructTemplateJson(data, phoneNumber, mediaId, variables, filename) {
   const { name, components, language } = data;
 
-  // Find the required components in the original structure
   const headerComponent = components.find((c) => c.type === "HEADER");
   const bodyComponent = components.find((c) => c.type === "BODY");
 
-  // Construct the template JSON
   const templateJson = {
     messaging_product: "whatsapp",
     recipient_type: "individual",
-    to: phoneNumber, // Placeholder for phone number
+    to: phoneNumber,
     type: "template",
     template: {
-      name: name, // Template name
-      language: {
-        code: language, // Language and locale
-      },
+      name: name,
+      language: { code: language },
       components: [],
     },
   };
 
-  // Map HEADER component if exists
+  // Map HEADER component if it exists
   if (
     headerComponent &&
-    headerComponent.format === "IMAGE" &&
-    headerComponent.example.header_handle && mediaId
+    headerComponent.format !== "TEXT" &&
+    headerComponent.example.header_handle &&
+    mediaId
   ) {
-    templateJson.template.components.push({
-      type: "header",
-      parameters: [{
-        type: "image",
-        image: {
-          link: mediaId, // Replace with uploaded media handle
-        }
-      }],
-    });
+    if (headerComponent.format == "IMAGE") {
+      templateJson.template.components.push({
+        type: "header",
+        parameters: [
+          {
+            type: "image",
+            image: { link: mediaId },
+          },
+        ],
+      });
+    } else if (headerComponent.format == "DOCUMENT") {
+      console.log("file name is ", filename);
+      templateJson.template.components.push({
+        type: "header",
+        parameters: [
+          {
+            type: "document",
+            document: {
+              link: mediaId,
+              filename: "برنامج اليوم المفتوح.pdf",
+            },
+          },
+        ],
+      });
+    } else if (headerComponent.format == "VIDEO") {
+      console.log("file name is ", filename);
+      templateJson.template.components.push({
+        type: "header",
+        parameters: [
+          {
+            type: "video",
+            video: {
+              link: mediaId,
+            },
+          },
+        ],
+      });
+    }
   }
 
-  // Map BODY component if exists
-//   if (bodyComponent) {
-//     const bodyParameters = [
-//       {
-//         type: "text",
-//         text: bodyComponent.text, // Text with variables
-//       },
-//     ];
+  // Map BODY component if it exists
+  if (bodyComponent && variables.length > 0) {
+    const bodyParameters = variables.map((variable) => ({
+      type: "text",
+      text: variable, // Map each variable to a text parameter
+    }));
 
-//     // Example currency parameter
-//     bodyParameters.push({
-//       type: "currency",
-//       currency: {
-//         fallback_value: "VALUE", // Placeholder for value
-//         code: "USD", // Currency code
-//         amount_1000: 1000, // Placeholder for amount
-//       },
-//     });
-
-//     // Example date_time parameter
-//     bodyParameters.push({
-//       type: "date_time",
-//       date_time: {
-//         fallback_value: "MONTH DAY, YEAR", // Placeholder for date
-//       },
-//     });
-
-//     templateJson.template.components.push({
-//       type: "body",
-//       parameters: bodyParameters,
-//     });
-//   }
+    templateJson.template.components.push({
+      type: "body",
+      parameters: bodyParameters,
+    });
+  }
 
   return templateJson;
 }
@@ -274,25 +304,22 @@ async function sendMessage(data) {
   const headers = {
     "Content-type": "application/json",
     Authorization:
-      "Bearer EAAGALlgZCIMsBO3SrQN0NEZCBmKbXdrdgr50gvg4xzIZCMNmOZAkZCG32rICJAOkdtU0yN88lheddkoY1wA47Frgy82HijOP16aFnt3ka6gysbaSJCi9tqBO14T8MQnd3kM66BFCLKwwwE7jZAZCSsg8X2H84SOnxbuTSbuzA9dxocyGIvLr2DspugOukNUeVKr0ZBZC52aabZAjkmC6PZB",
+      "Bearer EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD",
   };
 
-  const url = "https://graph.facebook.com/v20.0/394225673770982/messages";
+  const url = "https://graph.facebook.com/v20.0/120295417829073/messages";
 
   try {
     const response = await axios.post(url, data, { headers });
     if (response.status !== 200) {
-      console.log(response.data);
       throw new Error("Failed to send message");
     }
-
-    console.log(response.data);
     return response.data;
   } catch (error) {
     if (error.code === "ECONNREFUSED") {
       console.log("Connection Error", error.message);
     } else {
-      console.log("Errorrr", error);
+      console.log("error sending message", error);
     }
     return "failed";
   }
@@ -325,9 +352,9 @@ async function downloadFileToMemory(url) {
 async function downloadFileToFileSystem(url, outputDir) {
   try {
     const response = await axios({
-      method: 'get',
+      method: "get",
       url: url,
-      responseType: 'arraybuffer',
+      responseType: "arraybuffer",
     });
 
     // Extract filename and determine file path
@@ -339,9 +366,14 @@ async function downloadFileToFileSystem(url, outputDir) {
     console.log(`File downloaded and saved to ${filePath}`);
 
     // Return file details
-    return { filePath, fileName, fileSize: response.data.length, fileType: response.headers['content-type'] };
+    return {
+      filePath,
+      fileName,
+      fileSize: response.data.length,
+      fileType: response.headers["content-type"],
+    };
   } catch (error) {
-    console.error('Error downloading file:', error);
+    console.error("Error downloading file:", error);
     throw error;
   }
 }

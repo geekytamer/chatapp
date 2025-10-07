@@ -5,11 +5,11 @@ const useGetTemplates = () => {
     const [templates, setTemplates] = useState([])
     const [loading, setLoading] = useState(true);
 
-    const WHATSAPP_BUSINESS_ACCOUNT_ID = "429009386955154"; // replace with actual business account ID
+    const WHATSAPP_BUSINESS_ACCOUNT_ID = "120508451140772"; // replace with actual business account ID
     const FIELDS = "name,status,category,components,language"; // replace with the desired fields
     const LIMIT = 10; // replace with the desired limit
     const ACCESS_TOKEN =
-      "EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv"; // replace with the actual access token
+      "EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD"; // EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD replace with the actual access token
 
     const fetchMessageTemplates = async () => {
         try {

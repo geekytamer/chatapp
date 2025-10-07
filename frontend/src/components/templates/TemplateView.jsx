@@ -70,6 +70,7 @@ const TemplateView = () => {
 
     const formData = new FormData();
     formData.append("file", file);
+    console.log(template)
     formData.append("template", JSON.stringify(template));
 
     try {

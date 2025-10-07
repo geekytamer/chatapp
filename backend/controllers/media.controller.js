@@ -14,7 +14,7 @@ export const startUploadSession = async (req, res) => {
 export const startSession = async (fileName, fileSize, fileType) => {
   // Proxy request to Facebook Graph API to start an upload session
     const startSessionResponse = await fetch(
-      `https://graph.facebook.com/v20.0/422411514093771/uploads?file_name=${fileName}&file_length=${fileSize}&file_type=${fileType}&access_token=EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv`,
+      `https://graph.facebook.com/v20.0/112561545275629/uploads?file_name=${fileName}&file_length=${fileSize}&file_type=${fileType}&access_token=EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD`,
       { method: "POST" }
     );
     const sessionData = await startSessionResponse.json();
@@ -64,7 +64,7 @@ export const uploadFile = async (req, res) => {
 
 export const uploadFileBuffer = async (uploadSessionId, fileBuffer) => {
   const accessToken =
-    "EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv";
+    "EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD";
 
   console.log("Uploading file")
   if (!fileBuffer) {

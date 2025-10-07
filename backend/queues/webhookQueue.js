@@ -8,6 +8,8 @@ import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { getReceiverSocketId, io } from "../socket/socket.js";
 import { fileURLToPath } from "url";
+import { generateResponse } from "../utils/openai_service.js";
+import { sendWhatsappMessage, getTextMessageInput } from "../utils/whatsapp_handler.js";
 
 // Get the current directory of the module (ES module replacement for __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -79,10 +81,8 @@ async function handleNewMessage(body) {
 
   const message = body["entry"][0]["changes"][0]["value"]["messages"][0];
 
-  console.log("New message received:", { message });
-
   let user = await User.findOne({ username: waId });
-  let targetUser = await User.findOne({ username: "tmdone" });
+  let targetUser = await User.findOne({ username: "walaa" });
   let conversation = null;
 
   if (!user) {
@@ -97,11 +97,6 @@ async function handleNewMessage(body) {
     });
     await conversation.save();
   }
-
-  console.log("User:", user);
-
-  
-  console.log("Target user:", targetUser);
 
   if (!conversation) {
     try {
@@ -124,18 +119,16 @@ async function handleNewMessage(body) {
     }
   }
 
-  console.log("Conversation participants:", conversation.participants);
-
   let newMessage;
-
-  if (message.type === "text") {
+  const isImage = message.type === "image";
+  if (!isImage) {
     // Handle text message
     newMessage = new Message({
       senderId: user._id,
       receiverId: targetUser._id,
       message: message.text.body,
     });
-  } else if (message.type === "image") {
+  } else if (isImage) {
     // Handle image message
     const mediaId = message.image.id;
     const imageUrl = await getImageUrl(mediaId);
@@ -154,9 +147,7 @@ async function handleNewMessage(body) {
     }
   }
 
-  console.log("New message:", newMessage);
   const socketId = getReceiverSocketId(targetUser._id);
-
   if (conversation.messages.length == 0 && socketId) {
     io.to(socketId).emit("newConversation", {
       _id: user._id, // Conversation ID
@@ -174,6 +165,10 @@ async function handleNewMessage(body) {
     conversation.participants.push(targetUser._id);
   }
 
+  if (socketId) {
+    io.to(socketId).emit("newMessage", newMessage);
+  }
+
   try {
     await Promise.all([conversation.save(), newMessage.save()]);
   } catch (error) {
@@ -181,11 +176,31 @@ async function handleNewMessage(body) {
     return { message: "Error saving conversation and message to database." };
    }
 
-  console.log("New message saved:", newMessage);
+  if (conversation.autoResponseEnabled && !isImage) {
+    // Generate an auto-response
+    console.log("Generating auto-response for:", newMessage.message);
+    const autoResponse = await generateResponse(newMessage.message, waId);
+    const autoResponseMessage = new Message({
+      senderId: targetUser._id,
+      receiverId: user._id,
+      message: autoResponse,
+    });
+    conversation.messages.push(autoResponseMessage);
+    try {
+      await Promise.all([conversation.save(), autoResponseMessage.save()]);
+    } catch (error) {
+      console.error("Error saving conversation and message to database:", error);
+      return { message: "Error saving conversation and message to database." };
+     }
+    const data = getTextMessageInput(waId, autoResponse);
+    console.log("Sending auto-response:", data);
+    await sendWhatsappMessage(data);
 
-  const receiverSocketId = getReceiverSocketId(targetUser._id);
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("newMessage", newMessage);
+    console.log("Auto-response sent:", autoResponse);
+
+    if (socketId) {
+      io.to(socketId).emit("newMessage", autoResponseMessage);
+    }
   }
 
   return { message: "New message received and saved." };
@@ -196,7 +211,7 @@ async function getImageUrl(mediaId) {
   const url = `https://graph.facebook.com/v19.0/${mediaId}`;
   console.log("Getting image URL:", url);
   const headers = {
-    Authorization: `Bearer EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv`, // WhatsApp API access token
+    Authorization: `Bearer EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD`, // WhatsApp API access token
   };
 
   try {
@@ -222,7 +237,7 @@ async function downloadAndSaveImage(imageUrl, mediaId) {
 
   try {
     const headers = {
-      Authorization: `Bearer EAAGALlgZCIMsBO9CFs3oi7LgiULNLbohY1ccRZAZAVIZCGG95ZBnyRIcLVZBNVBeg9lrh8ppcaufTerjRSNlFfZBAw5enkz5GycmaB9ZCRTUFcC4vOCxAv00TJmhoWJisBeiHZAY4PZCHjXtSKhZC4GTP7XmcEqkZAJIJkBu3095qLulW8bnXF1JRIUSvCyLUhHPxYUXhMddZCcsmHxDegDcv`, // Use your access token from environment variables
+      Authorization: `Bearer EAASaGKQLCyoBPOcuHkj4ZCwUOMAgYexo2DvuVFdEMH0JxZAoj6cUKUY02GieLjGeZAxHMIsWETYZAIEwEwkHefxcGZAi6HwMgPvXtkkCLCAzZC6qmfuxzSR8F3G30Tncy82Xtm5B8FjVafqokLUBBsTZAUTiZC5dwXfrpQOYBHinSdcapMvSiRYcNyK61uKrtDKgcAZDZD`, // Use your access token from environment variables
     };
 
     const response = await axios.get(imageUrl, {

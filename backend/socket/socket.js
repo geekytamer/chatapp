@@ -5,14 +5,16 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(cookieParser()); // Parse cookies from request headers
-app.use(express.json()); // Parse JSON request bodies
+app.use(express.json({ limit: "50mb" })); // Parse JSON request bodies
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 const server = http.createServer(app);
+server.setTimeout(20 * 60 * 1000);
 const io = new Server(server, {
   cors: {
     origin: [
-      "http://localhost:3000",
-      "https://v10fwg0x-3000.inc1.devtunnels.ms",
+      "http://localhost:3011",
+      "https://mll116rk-3011.asse.devtunnels.ms",
     ], // Add both origins here
     methods: ["GET", "POST"],
     credentials: true, // Include this if you need cookies or other credentials

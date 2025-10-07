@@ -8,43 +8,34 @@ import { AuthContextProvider, useAuthContext } from "./context/AuthContext";
 import TemplatesList from "./components/templates/TemplatesList";
 import TemplateView from "./components/templates/TemplateView";
 import CreateTemplatePage from "./components/templates/CreateTemplatePage";
-import SelectionPage from "./pages/SelectionPage"; // Import the new component
+import Layout from "./components/Layout"; // New layout
 
 export default function App() {
   const { authUser } = useAuthContext();
   console.log("auth user", authUser);
+
   return (
-    <div className="p4 w-screen h-screen flex items-center justify-center">
+    <div className="w-screen h-screen">
       <Routes>
-        <Route>
-          <Route
-            path="/"
-            element={authUser ? <SelectionPage /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/home"
-            element={authUser ? <Home /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/login"
-            element={authUser ? <Navigate to="/" /> : <Login />}
-          />
-          <Route
-            path="/signup"
-            element={authUser ? <Navigate to="/" /> : <SignUp />}
-          />
-          <Route
-            path="/templates"
-            element={authUser ? <TemplatesList/> : <Login />}
-          />
-          <Route
-            path="/templates/:templateId"
-            element={authUser ? <TemplateView/> : <Login />}
-          />
-          <Route
-            path="/templates/create"
-            element={authUser ? <CreateTemplatePage/> : <Login />}
-          />
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={authUser ? <Navigate to="/" /> : <Login />}
+        />
+        <Route
+          path="/signup"
+          element={authUser ? <Navigate to="/" /> : <SignUp />}
+        />
+
+        {/* Protected Routes (inside Layout) */}
+        <Route
+          path="/"
+          element={authUser ? <Layout /> : <Navigate to="/login" />}
+        >
+          <Route index element={<Home />} />
+          <Route path="templates" element={<TemplatesList />} />
+          <Route path="templates/:templateId" element={<TemplateView />} />
+          <Route path="templates/create" element={<CreateTemplatePage />} />
         </Route>
       </Routes>
       <Toaster />

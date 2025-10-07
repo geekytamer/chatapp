@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { app, server } from "./socket/socket.js";
 import authRouter from "./routes/auth.routes.js";
 import messagesRouter from "./routes/message.routes.js";
+import conversationRouter from "./routes/conversation.routes.js";
 import userRouter from "./routes/user.routes.js";
 import templateRouter from "./routes/template.route.js";
 import mediaRouter from "./routes/media.routes.js";
@@ -14,7 +15,7 @@ import fs from "fs";
 import { startUploadSession, uploadFile } from "./controllers/media.controller.js";
 import { fileURLToPath } from "url";
 import campaignRouter from "./routes/campaign.routes.js";
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 dotenv.config(); // Load environment variables from.env file
 
@@ -52,7 +53,8 @@ app.use("/api/templates", templateRouter); // Load template routes
 app.use("/api/media", mediaRouter)
 app.use("/api/webhook", webhookRouter); // Load webhook routes
 app.use("/api/campaigns", campaignRouter);
-// Start the server on port 5000
+app.use("/api/conversations", conversationRouter); // Load conversation routes
+// Start the server on port 5001
 server.listen(PORT, () => {
   connectToMongoDB();
   console.log(`Server running on port ${PORT}`);

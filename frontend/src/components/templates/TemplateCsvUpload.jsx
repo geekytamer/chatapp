@@ -8,6 +8,7 @@ const TemplateCSVUpload = () => {
 
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("");
+  console.log("im hereee")
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -18,6 +19,12 @@ const TemplateCSVUpload = () => {
       alert("Please upload a CSV file.");
       return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      console.log("File content preview:", reader.result);
+    };
+    reader.readAsText(file); // Read the file as text (you can inspect it here)
 
     const formData = new FormData();
     formData.append("file", file);

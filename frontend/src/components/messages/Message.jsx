@@ -26,7 +26,7 @@ const Message = ({ message }) => {
         {message.imageUrl && (
           <div className="chat-image w-60 rounded-lg mt-2">
             <img
-              src={`http://localhost:5000/fetch-file/${message.imageUrl}`}
+              src={`http://localhost:5001/fetch-file/${message.imageUrl}`}
               alt="User sent image"
               className="rounded-lg"
               />
