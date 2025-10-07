@@ -1,0 +1,6 @@
+1-configure ip address/domain of the backend inside frontend/vite.config.js
+2-In meta dashboard, configure webhook setting with backend-ip/api/webhook, verification code is 123456
+3-cd to /frontend and run frontend using pm2 
+4-run backend using npm run server in root directory
+5-ensure cors configuration 
+
